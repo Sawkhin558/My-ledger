@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Professional Cloud Ledger</title>
+    <style>
+        :root { --p: #0078d4; --s: #107c10; --d: #d83b01; --bg: #f3f2f1; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        /* App Bar */
+        .app-bar { background: var(--p); color: white; padding: 15px; display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .sync-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 12px; border-radius: 15px; cursor: pointer; font-size: 12px; }
+
+        .container { max-width: 600px; margin: auto; padding: 15px; }
+
+        /* Dashboard Analysis */
+        .card-main { background: #201f1e; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { padding: 12px; border-radius: 10px; color: white; text-align: center; font-size: 14px; font-weight: bold; }
+        
+        /* Summary Analysis */
+        .summary-box { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid #ddd; }
+        .win { color: var(--s); font-weight: bold; font-size: 18px; }
+        .loss { color: var(--d); font-weight: bold; font-size: 18px; }
+
+        /* Filter Tabs */
+        .tabs { display: flex; background: #e1dfdd; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+        .tab { flex: 1; border: none; padding: 10px; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; }
+        .tab.active { background: white; color: var(--p); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        /* List Items */
+        .item-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .income { border-left-color: var(--s); }
+        .expense { border-left-color: var(--d); }
+        .action-btns span { margin-left: 10px; cursor: pointer; font-size: 18px; }
+
+        /* Floating Button & Modal */
+        .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--p); color: white; border-radius: 50%; border: none; font-size: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; z-index: 99; }
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; padding:20px; z-index:1000; }
+        .modal-content { background:white; padding:25px; border-radius:20px; width:100%; max-width:400px; }
+        input, select { width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="app-bar">
+    <span id="sync-text">Universal Ledger</span>
+    <button class="sync-btn" onclick="syncData()">Cloud Sync 🔄</button>
+</div>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab" onclick="setFilter('week', this)">ပတ်စဉ်</button>
+        <button class="tab active" onclick="setFilter('month', this)">လစဉ်</button>
+        <button class="tab" onclick="setFilter('year', this)">နှစ်စဉ်</button>
+        <button class="tab" onclick="setFilter('all', this)">အားလုံး</button>
+    </div>
+
+    <div class="card-main">
+        <small id="period-label">ယခုလ လက်ကျန်ငွေ</small>
+        <h1 id="total-bal">0</h1>
+        <div id="storage-status" style="font-size: 11px; opacity: 0.7;">Storage: 0%</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box" style="background:var(--s);">ဝင်ငွေ<br><span id="total-inc">0</span></div>
+        <div class="stat-box" style="background:var(--d);">ထွက်ငွေ<br><span id="total-exp">0</span></div>
+    </div>
+
+    <div class="summary-box">
+        <div style="font-size: 12px; color: #666; margin-bottom: 5px;">သုံးသပ်ချက်</div>
+        <div id="analysis-result">ဒေတာမရှိသေးပါ။</div>
+    </div>
+
+    <h4 id="list-title">ယခုလ စာရင်းများ</h4>
+    <div id="list-container"></div>
+</div>
+
+<button class="fab" onclick="showModal()">+</button>
+
+<div id="entry-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title">စာရင်းအသစ်</h3>
+        <input type="hidden" id="edit-id">
+        <input type="date" id="f-date">
+        <input type="text" id="f-desc" placeholder="အကြောင်းအရာ">
+        <select id="f-type">
+            <option value="income">ဝင်ငွေ (+)</option>
+            <option value="expense">ထွက်ငွေ (-)</option>
+        </select>
+        <input type="number" id="f-amt" placeholder="ပမာဏ">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="saveEntry()" style="flex:2; padding:12px; background:var(--s); color:white; border:none; border-radius:10px; font-weight:bold;">သိမ်းမည်</button>
+            <button onclick="hideModal()" style="flex:1; padding:12px; background:#666; color:white; border:none; border-radius:10px;">ပိတ်မည်</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyDHpHI4qyDpuaxmzSmLfiR6mUyKvWWcxirbu4phCAMlYbAhuBhyVPwnEYP_S-TqVAD/exec";
+    let database = JSON.parse(localStorage.getItem('universal_ledger')) || [];
+    let currentFilter = 'month';
+
+    function setFilter(mode, btn) {
+        currentFilter = mode;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        const titles = { 'week': 'ပတ်စဉ်', 'month': 'လစဉ်', 'year': 'နှစ်စဉ်', 'all': 'အားလုံး' };
+        document.getElementById('period-label').innerText = `${titles[mode]} လက်ကျန်ငွေ`;
+        document.getElementById('list-title').innerText = `${titles[mode]} စာရင်းများ`;
+        render();
+    }
+
+    function render() {
+        const container = document.getElementById('list-container');
+        container.innerHTML = "";
+        let inc = 0, exp = 0;
+        const now = new Date();
+
+        let filtered = database.filter(item => {
+            const d = new Date(item.date);
+            if (currentFilter === 'week') {
+                const start = new Date(); start.setDate(now.getDate() - 7);
+                return d >= start && d <= now;
+            }
+            if (currentFilter === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            if (currentFilter === 'year') return d.getFullYear() === now.getFullYear();
+            return true;
+        });
+
+        filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        filtered.forEach(item => {
+            const amt = parseFloat(item.amount);
+            if(item.type === 'income') inc += amt; else exp += amt;
+            container.innerHTML += `
+                <div class="item-card ${item.type}">
+                    <div>
+                        <small style="color:#666">${item.date.split('-').reverse().join('/')}</small>
+                        <div style="font-weight:bold">${item.desc}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <b style="color:${item.type==='income'?'var(--s)':'var(--d)'}">${item.type==='income'?'+':'-'}${amt.toLocaleString()}</b>
+                        <div class="action-btns">
+                            <span onclick="editItem('${item.id}')">✏️</span>
+                            <span onclick="deleteItem('${item.id}')">🗑️</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+
+        document.getElementById('total-inc').innerText = inc.toLocaleString();
+        document.getElementById('total-exp').innerText = exp.toLocaleString();
+        const bal = inc - exp;
+        document.getElementById('total-bal').innerText = bal.toLocaleString();
+
+        const analysis = document.getElementById('analysis-result');
+        if(bal > 0) analysis.innerHTML = `ဤကာလအတွင်း ငွေ <span class="win">${bal.toLocaleString()}</span> စုမိပါသည်။ 💰`;
+        else if(bal < 0) analysis.innerHTML = `ဝင်ငွေထက် <span class="loss">${Math.abs(bal).toLocaleString()}</span> ပိုသုံးမိပါသည်။ ⚠️`;
+        else analysis.innerHTML = `ဝင်ငွေနှင့် ထွက်ငွေ မျှတပါသည်။ ⚖️`;
+
+        const storage = (database.length / 5000 * 100).toFixed(1);
+        document.getElementById('storage-status').innerText = `Cloud Usage: ${storage}%`;
+        localStorage.setItem('universal_ledger', JSON.stringify(database));
+    }
+
+    function showModal() { document.getElementById('entry-modal').style.display = 'flex'; document.getElementById('f-date').value = new Date().toISOString().split('T')[0]; }
+    function hideModal() { 
+        document.getElementById('entry-modal').style.display = 'none'; 
+        document.getElementById('edit-id').value = "";
+        document.getElementById('f-desc').value = "";
+        document.getElementById('f-amt').value = "";
+        document.getElementById('modal-title').innerText = "စာရင်းအသစ်";
+    }
+
+    function saveEntry() {
+        const id = document.getElementById('edit-id').value || Date.now().toString();
+        const entry = {
+            id: id,
+            date: document.getElementById('f-date').value,
+            desc: document.getElementById('f-desc').value,
+            type: document.getElementById('f-type').value,
+            amount: document.getElementById('f-amt').value
+        };
+        if(!entry.desc || !entry.amount) return alert("အချက်အလက်ဖြည့်ပါ");
+
+        const idx = database.findIndex(x => x.id === id);
+        if(idx > -1) database[idx] = entry; else database.push(entry);
+
+        render(); hideModal();
+        if(navigator.onLine) syncData();
+    }
+
+    function editItem(id) {
+        const item = database.find(x => x.id === id);
+        document.getElementById('edit-id').value = item.id;
+        document.getElementById('f-date').value = item.date;
+        document.getElementById('f-desc').value = item.desc;
+        document.getElementById('f-type').value = item.type;
+        document.getElementById('f-amt').value = item.amount;
+        document.getElementById('modal-title').innerText = "စာရင်းပြင်ဆင်ရန်";
+        showModal();
+    }
+
+    function deleteItem(id) {
+        if(confirm("ဖျက်မှာ သေချာပါသလား?")) {
+            database = database.filter(x => x.id !== id);
+            render(); if(navigator.onLine) syncData();
+        }
+    }
+
+    async function syncData() {
+        document.getElementById('sync-text').innerText = "Syncing...⏳";
+        try {
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(database) });
+            document.getElementById('sync-text').innerText = "Cloud Synced ✅";
+        } catch (e) { document.getElementById('sync-text').innerText = "Offline Mode 📍"; }
+    }
+
+    render();
+</script>
+
+</body>
+</html>
