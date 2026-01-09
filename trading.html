@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Crypto Terminal v2.5 Stable</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body class="bg-[#0b0e11] text-gray-200">
+
+    <div class="max-w-[1500px] mx-auto p-4">
+        <div class="bg-[#1e2329] p-6 rounded-2xl border border-gray-800 mb-6">
+            <h2 class="text-yellow-400 font-bold mb-4 uppercase italic text-xs tracking-widest">
+                ⚙️ Connection Setup (Fixed Proxy Logic)
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">Binance Keys</label>
+                    <input id="binKey" type="password" placeholder="API Key" class="w-full bg-gray-800 p-2 rounded border border-gray-700 text-xs outline-none">
+                    <input id="binSec" type="password" placeholder="Secret Key" class="w-full bg-gray-800 p-2 rounded border border-gray-700 text-xs outline-none">
+                    <button onclick="testBinance()" class="w-full text-[10px] bg-gray-700 hover:bg-gray-600 p-2 rounded font-bold transition">Verify Binance</button>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">AI Engine</label>
+                    <input id="aiKey" type="password" placeholder="Gemini 2.5 API Key" class="w-full bg-gray-800 p-2 rounded border border-gray-700 text-xs outline-none">
+                    <button onclick="testAI()" class="w-full text-[10px] bg-blue-900/40 hover:bg-blue-800 p-2 rounded font-bold transition">Verify Gemini</button>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">Market Symbol</label>
+                    <select id="symbol" class="w-full bg-gray-800 p-2 rounded border border-gray-700 text-xs outline-none">
+                        <option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
+                        <option value="ETHUSDT">Ethereum (ETH/USDT)</option>
+                        <option value="SOLUSDT">Solana (SOL/USDT)</option>
+                    </select>
+                    <div class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-700 mt-2">
+                        <span class="text-[10px] text-gray-400">AI Every:</span>
+                        <input id="candleLimit" type="number" value="3" min="1" class="bg-transparent w-full text-center text-yellow-500 font-bold outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-end">
+                    <button onclick="launchEngine()" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl hover:bg-yellow-400 transition shadow-xl active:scale-95">
+                        LAUNCH TERMINAL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-3 space-y-4">
+                <div class="bg-[#1e2329] p-5 rounded-2xl border border-gray-800 shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center space-x-4">
+                            <span id="pName" class="text-xl font-bold uppercase text-gray-400">---</span>
+                            <span id="livePrice" class="text-3xl font-mono font-bold text-green-400">0.00</span>
+                        </div>
+                        <div id="balance" class="text-xl font-mono text-yellow-500 font-bold tracking-tighter">---.-- USDT</div>
+                    </div>
+                    <div id="chart" class="h-[450px] w-full bg-black rounded-xl border border-gray-900 overflow-hidden"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]">
+                    <div class="bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl">
+                        <h4 class="text-blue-400 font-bold uppercase mb-2">📊 Technical Data</h4>
+                        <div id="techOut" class="text-gray-400 font-mono italic">RSI: -- | MACD: --</div>
+                    </div>
+                    <div class="bg-green-900/10 border border-green-800/20 p-4 rounded-xl">
+                        <h4 class="text-green-400 font-bold uppercase mb-2">🕯️ Market Tech</h4>
+                        <div id="candleOut" class="text-gray-400">Waiting for data analysis...</div>
+                    </div>
+                    <div class="bg-purple-900/10 border border-purple-500/20 p-4 rounded-xl">
+                        <h4 class="text-purple-400 font-bold uppercase mb-2">🐳 Whale Tracker</h4>
+                        <div id="whaleOut" class="text-gray-400">Tracking order flow...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 flex flex-col">
+                <div class="bg-gradient-to-br from-[#1e2329] to-[#0b0e11] p-5 rounded-2xl border border-yellow-500/30 shadow-2xl flex-1 overflow-y-auto">
+                    <h3 class="text-yellow-500 font-bold text-xs mb-4 uppercase tracking-widest border-b border-gray-800 pb-2">🎯 AI PRO SIGNAL (v2.5)</h3>
+                    <div id="finalAdvice" class="text-[12px] leading-relaxed text-gray-300">
+                        အချက်အလက်များကို စောင့်ဆိုင်းနေပါသည်...
+                    </div>
+                </div>
+                <div id="logs" class="bg-[#1e2329] p-3 rounded-2xl border border-gray-800 h-44 overflow-y-auto text-[10px] font-mono text-gray-500">
+                    <div>> Ready. Localhost / Webview Mode Active.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart, series, socket, candleBuffer = [];
+        // Proxy URL ကို အနည်းငယ် ပြင်ဆင်ထားပါတယ်
+        const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+
+        function addLog(msg, color = 'text-gray-500') {
+            const l = document.getElementById('logs');
+            l.innerHTML = `<div class="${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>` + l.innerHTML;
+        }
+
+        // --- Technical Tools ---
+        function calculateRSI(closes, period = 14) {
+            if (closes.length <= period) return "N/A";
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= period; i++) {
+                let diff = closes[i] - closes[i - 1];
+                if (diff >= 0) gains += diff; else losses -= diff;
+            }
+            let avgGain = gains / period; let avgLoss = losses / period;
+            for (let i = period + 1; i < closes.length; i++) {
+                let diff = closes[i] - closes[i - 1];
+                avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
+                avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+            }
+            return (100 - (100 / (1 + avgGain / avgLoss))).toFixed(2);
+        }
+
+        function calculateEMA(data, period) {
+            const k = 2 / (period + 1);
+            let ema = data[0];
+            for (let i = 1; i < data.length; i++) ema = (data[i] * k) + (ema * (1 - k));
+            return ema;
+        }
+
+        // --- API Connections ---
+        async function testBinance() {
+            const key = document.getElementById('binKey').value;
+            const secret = document.getElementById('binSec').value;
+            if(!key || !secret) return alert("API Key နှင့် Secret Key ထည့်ပါ။");
+            
+            addLog("Attempting Binance Connection via Proxy...", "text-yellow-400");
+            try {
+                const ts = Date.now();
+                const sig = CryptoJS.HmacSHA256(`timestamp=${ts}`, secret).toString();
+                const bUrl = `https://api.binance.com/api/v3/account?timestamp=${ts}&signature=${sig}`;
+                
+                // Fetch header ထဲမှာ Origin ထည့်ခြင်းဖြင့် Proxy Error ကို ရှောင်ပါတယ်
+                const res = await fetch(CORS_PROXY + bUrl, {
+                    method: 'GET',
+                    headers: { 
+                        'X-MBX-APIKEY': key,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                const d = await res.json();
+                if(d.balances) {
+                    const usdt = d.balances.find(b => b.asset === 'USDT');
+                    document.getElementById('balance').innerText = parseFloat(usdt.free).toFixed(2) + " USDT";
+                    addLog("Binance Verified: Connected!", "text-green-500");
+                } else {
+                    addLog(`Binance Error: ${d.msg}`, "text-red-400");
+                }
+            } catch(e) { 
+                addLog("Proxy Error: CORS Demo Access ကို နောက်တစ်ကြိမ် Unlock လုပ်ပေးပါ။", "text-red-500");
+                window.open("https://cors-anywhere.herokuapp.com/corsdemo", "_blank");
+            }
+        }
+
+        async function testAI() {
+            const key = document.getElementById('aiKey').value;
+            if(!key) return alert("Gemini API Key ထည့်ပါ။");
+            addLog("Testing Gemini 2.5 Flash Connection...");
+            const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+            try {
+                const res = await fetch(gUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
+                });
+                if(res.ok) addLog("Gemini 2.5 Flash: Connected!", "text-blue-400");
+                else addLog("AI Key Invalid သို့မဟုတ် VPN အခက်အခဲ။", "text-red-400");
+            } catch(e) { addLog("AI Fail: Check Network/VPN.", "text-red-400"); }
+        }
+
+        // --- Market Core ---
+        function initChart() {
+            const el = document.getElementById('chart'); el.innerHTML = '';
+            chart = LightweightCharts.createChart(el, {
+                layout: { background: { color: '#000' }, textColor: '#848e9c' },
+                grid: { vertLines: { color: '#161a1e' }, horzLines: { color: '#161a1e' } }
+            });
+            series = chart.addCandlestickSeries({ upColor: '#2ebd85', downColor: '#f6465d' });
+        }
+
+        function launchEngine() {
+            const sym = document.getElementById('symbol').value;
+            const aiKey = document.getElementById('aiKey').value;
+            if(!aiKey) return alert("AI Key မရှိဘဲ စတင်၍မရပါ။");
+            
+            initChart();
+            document.getElementById('pName').innerText = sym;
+            addLog(`Market Stream Started: ${sym}`, "text-yellow-500");
+            
+            if(socket) socket.close();
+            // Port 443 သုံးခြင်းဖြင့် ပိုငြိမ်ပါတယ်
+            socket = new WebSocket(`wss://stream.binance.com:443/ws/${sym.toLowerCase()}@kline_1m`);
+
+            socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                const k = data.k;
+                const candle = { time: k.t / 1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c) };
+                series.update(candle);
+                document.getElementById('livePrice').innerText = candle.close.toLocaleString();
+                
+                if (k.x) {
+                    candleBuffer.push(candle);
+                    const limit = document.getElementById('candleLimit').value;
+                    if(candleBuffer.length >= limit) {
+                        runDeepAnalysis(candleBuffer, sym, aiKey);
+                        candleBuffer = [];
+                    }
+                }
+            };
+            socket.onerror = () => addLog("Binance Stream Error. Check VPN.", "text-red-500");
+        }
+
+        async function runDeepAnalysis(candles, sym, key) {
+            const closes = candles.map(c => c.close);
+            const rsi = calculateRSI(closes);
+            const macd = (calculateEMA(closes, 12) - calculateEMA(closes, 26)).toFixed(4);
+            document.getElementById('techOut').innerText = `RSI: ${rsi} | MACD: ${macd}`;
+
+            const prompt = `Act as an Elite Crypto Trader. Analyze ${sym}.
+            Data: ${JSON.stringify(candles.slice(-5))}. Indicators: RSI=${rsi}, MACD=${macd}.
+            Burmese Language response:
+            SECTION1: News Speculation.
+            SECTION2: Technical Trend.
+            SECTION3: Whale flow prediction.
+            SECTION4: Final Signal (Entry, TP, SL).`;
+
+            const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+            
+            try {
+                const res = await fetch(gUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const d = await res.json();
+                const text = d.candidates[0].content.parts[0].text;
+                const parts = text.split(/SECTION\d:/);
+                
+                document.getElementById('candleOut').innerText = (parts[2] || "Analyzing Pattern...").trim();
+                document.getElementById('whaleOut').innerText = (parts[3] || "Analyzing Flow...").trim();
+                document.getElementById('finalAdvice').innerHTML = `
+                    <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg shadow-inner">
+                        <h4 class="font-bold text-yellow-500 mb-2 border-b border-yellow-500/10 pb-1 font-mono italic">EXECUTION PLAN</h4>
+                        ${(parts[4] || text).trim().replace(/\n/g, '<br>')}
+                    </div>`;
+                addLog("Deep Analysis Updated (v2.5 Flash)", "text-green-400");
+            } catch(e) { addLog("AI Analysis Failed.", "text-red-400"); }
+        }
+    </script>
+</body>
+</html>
